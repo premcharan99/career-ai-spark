@@ -11,12 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 
 const Pricing = () => {
-  const { user } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
 
-  const handleUpgrade = async (tierId: string) => {
+  const handleUpgrade = async (tierId: 'free' | 'lite' | 'pro') => {
     if (!user) {
       toast({
         title: "Login required",
@@ -28,7 +28,7 @@ const Pricing = () => {
     }
 
     // If user already has this plan
-    if (user.subscription === tierId) {
+    if (profile?.subscription_tier === tierId) {
       toast({
         title: "Already subscribed",
         description: `You are already on the ${tierId.toUpperCase()} plan`,
@@ -43,8 +43,11 @@ const Pricing = () => {
       const success = await upgradeSubscription(user.id, tierId);
       
       if (success) {
-        // In a real app, this would be handled by a webhook that updates the user's subscription
-        // For now, we just simulate the upgrade
+        await updateProfile();
+        toast({
+          title: "Subscription upgraded",
+          description: `Your subscription has been upgraded to ${tierId.toUpperCase()}`,
+        });
         navigate('/dashboard');
       }
     } catch (error) {
@@ -69,7 +72,7 @@ const Pricing = () => {
   };
 
   const isCurrentPlan = (tierId: string) => {
-    return user?.subscription === tierId;
+    return profile?.subscription_tier === tierId;
   };
 
   return (
@@ -146,7 +149,7 @@ const Pricing = () => {
                 <Button 
                   className="w-full" 
                   variant={tier.id === 'free' ? 'outline' : 'default'}
-                  onClick={() => handleUpgrade(tier.id)}
+                  onClick={() => handleUpgrade(tier.id as 'free' | 'lite' | 'pro')}
                   disabled={isCurrentPlan(tier.id) || !!isUpgrading}
                 >
                   {isUpgrading === tier.id ? 'Processing...' : 

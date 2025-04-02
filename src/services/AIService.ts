@@ -158,8 +158,7 @@ export const getAnalysisHistory = async (userId: string): Promise<any[]> => {
   try {
     // Call the get-analysis-history edge function
     const { data, error } = await supabase.functions.invoke('get-analysis-history', {
-      body: {},
-      query: { userId }
+      body: { userId }
     });
     
     if (error) {
@@ -181,8 +180,7 @@ export const getAnalysisDetail = async (analysisId: string): Promise<any> => {
   try {
     // Call the get-analysis-detail edge function
     const { data, error } = await supabase.functions.invoke('get-analysis-detail', {
-      body: {},
-      query: { analysisId }
+      body: { analysisId }
     });
     
     if (error) {

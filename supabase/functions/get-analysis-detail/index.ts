@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,82 +14,98 @@ serve(async (req) => {
   }
 
   try {
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Supabase credentials not found");
     }
 
-    // Create a Supabase client with the user's JWT
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://ghekizltpiqfstegzgyu.supabase.co';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZWtpemx0cGlxZnN0ZWd6Z3l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1OTA0NTAsImV4cCI6MjA1OTE2NjQ1MH0.hXBCO152N8TFzJnV8vJtyI426yG9VO5QbAdHcKxI6zI';
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    });
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const url = new URL(req.url);
-    const analysisId = url.searchParams.get('analysisId');
+    // Get the analysisId from the request
+    const { analysisId } = await req.json();
 
     if (!analysisId) {
-      throw new Error('Analysis ID is required');
+      return new Response(
+        JSON.stringify({ error: "Analysis ID is required" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
 
     console.log(`Fetching analysis detail for ID: ${analysisId}`);
 
-    // Get the analysis
-    const { data: analysis, error: analysisError } = await supabase
+    // Fetch the analysis details
+    const { data: analysisData, error: analysisError } = await supabase
       .from('resume_analyses')
       .select('*')
       .eq('id', analysisId)
       .single();
 
     if (analysisError) {
+      console.error("Error fetching analysis:", analysisError);
       throw new Error(`Error fetching analysis: ${analysisError.message}`);
     }
 
-    // Get the resume data
-    const { data: resumeData, error: resumeDataError } = await supabase
+    // Fetch the resume data
+    const { data: resumeData, error: resumeError } = await supabase
       .from('resume_data')
       .select('*')
       .eq('analysis_id', analysisId)
       .single();
 
-    if (resumeDataError && resumeDataError.code !== 'PGRST116') {
-      console.error(`Error fetching resume data: ${resumeDataError.message}`);
+    if (resumeError && resumeError.code !== 'PGRST116') { // Not found error code
+      console.error("Error fetching resume data:", resumeError);
+      // Continue without throwing
     }
 
-    // Get the job data
-    const { data: jobData, error: jobDataError } = await supabase
+    // Fetch the job data
+    const { data: jobData, error: jobError } = await supabase
       .from('job_data')
       .select('*')
       .eq('analysis_id', analysisId)
       .single();
 
-    if (jobDataError && jobDataError.code !== 'PGRST116') {
-      console.error(`Error fetching job data: ${jobDataError.message}`);
+    if (jobError && jobError.code !== 'PGRST116') { // Not found error code
+      console.error("Error fetching job data:", jobError);
+      // Continue without throwing
     }
 
-    // Combine all the data
-    const result = {
-      analysis,
-      resumeData: resumeData || null,
-      jobData: jobData || null
+    // Combine all data into a single response
+    const detailResponse = {
+      id: analysisData.id,
+      jobTitle: analysisData.job_title,
+      jobDescription: analysisData.job_description,
+      date: analysisData.created_at,
+      resumeUrl: analysisData.resume_url,
+      matchScore: analysisData.match_score,
+      matchingSkills: analysisData.matching_skills,
+      missingSkills: analysisData.missing_skills,
+      suggestions: analysisData.suggestions,
+      improvedContent: analysisData.improved_content,
+      resumeData: resumeData ? {
+        skills: resumeData.skills,
+        experience: resumeData.experience,
+        education: resumeData.education,
+        certifications: resumeData.certifications
+      } : null,
+      jobData: jobData ? {
+        requiredSkills: jobData.required_skills,
+        preferredSkills: jobData.preferred_skills,
+        responsibilities: jobData.responsibilities,
+        requirements: jobData.requirements
+      } : null
     };
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify(detailResponse),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error in get-analysis-detail function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: error.message || "Failed to fetch analysis detail" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });

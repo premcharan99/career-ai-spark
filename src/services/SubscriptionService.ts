@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 
 export interface SubscriptionData {
   used: number;
@@ -8,6 +9,45 @@ export interface SubscriptionData {
   tier: string;
   status: string;
 }
+
+export const subscriptionTiers = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: 0,
+    features: [
+      'Basic resume analysis',
+      '5 analyses per month',
+      'Skills matching',
+      'Basic improvement suggestions'
+    ]
+  },
+  {
+    id: 'lite',
+    name: 'Lite',
+    price: 9.99,
+    features: [
+      'Everything in Free',
+      '20 analyses per month',
+      'Advanced keyword optimization',
+      'ATS compatibility score',
+      'Priority support'
+    ]
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 19.99,
+    features: [
+      'Everything in Lite',
+      '100 analyses per month',
+      'Industry-specific recommendations',
+      'Advanced formatting suggestions',
+      'Resume templates',
+      'Phone consultation with career expert'
+    ]
+  }
+];
 
 // Get remaining analyses for a user
 export const getRemainingAnalyses = async (userId: string): Promise<SubscriptionData> => {

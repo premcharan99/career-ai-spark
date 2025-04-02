@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,53 +14,63 @@ serve(async (req) => {
   }
 
   try {
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Supabase credentials not found");
     }
 
-    // Create a Supabase client with the user's JWT
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://ghekizltpiqfstegzgyu.supabase.co';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoZWtpemx0cGlxZnN0ZWd6Z3l1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1OTA0NTAsImV4cCI6MjA1OTE2NjQ1MH0.hXBCO152N8TFzJnV8vJtyI426yG9VO5QbAdHcKxI6zI';
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    });
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const url = new URL(req.url);
-    const userId = url.searchParams.get('userId');
+    // Get the userId from the request
+    const { userId } = await req.json();
 
     if (!userId) {
-      throw new Error('User ID is required');
+      return new Response(
+        JSON.stringify({ error: "User ID is required" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
 
     console.log(`Fetching analysis history for user: ${userId}`);
 
-    // Get all analyses for the user, ordered by creation date descending
-    const { data: analyses, error: analysesError } = await supabase
+    // Fetch the user's analysis history
+    const { data, error } = await supabase
       .from('resume_analyses')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (analysesError) {
-      throw new Error(`Error fetching analyses: ${analysesError.message}`);
+    if (error) {
+      console.error("Error fetching analysis history:", error);
+      throw new Error(`Error fetching analysis history: ${error.message}`);
     }
 
+    // Format the response
+    const formattedData = data.map(item => ({
+      id: item.id,
+      date: item.created_at,
+      jobTitle: item.job_title,
+      matchScore: item.match_score,
+      matchResult: {
+        matchingSkills: item.matching_skills,
+        missingSkills: item.missing_skills,
+        suggestions: item.suggestions,
+        improved: item.improved_content,
+        overallScore: item.match_score
+      }
+    }));
+
     return new Response(
-      JSON.stringify(analyses),
+      JSON.stringify(formattedData),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error in get-analysis-history function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: error.message || "Failed to fetch analysis history" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });
