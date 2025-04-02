@@ -1,17 +1,15 @@
 
+import { supabase } from '@/integrations/supabase/client';
 import { MatchResult } from '@/components/AnalysisResult';
 
-// This service will be replaced with actual API calls to Supabase Edge Functions
-// that will handle calls to Gemini and OpenAI APIs
-
-interface ResumeData {
+export interface ResumeData {
   skills: string[];
   experience: string[];
   education: string[];
   certifications: string[];
 }
 
-interface JobData {
+export interface JobData {
   requiredSkills: string[];
   preferredSkills: string[];
   responsibilities: string[];
@@ -21,100 +19,90 @@ interface JobData {
 export const parseResume = async (resumeFile: File): Promise<ResumeData> => {
   console.log('Parsing resume:', resumeFile.name);
   
-  // In the real implementation, this would:
-  // 1. Upload the resume to Supabase Storage
-  // 2. Call a Supabase Edge Function that uses Gemini API to parse the resume
-  // 3. Return structured data from the resume
+  // Read the file content
+  const fileContent = await readFileAsText(resumeFile);
   
-  // For now, return mock data
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  return {
-    skills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'HTML', 'Responsive Design', 'Redux'],
-    experience: [
-      'Frontend Developer at XYZ Corp (2020-Present)',
-      'Junior Developer at ABC Inc (2018-2020)'
-    ],
-    education: [
-      'Bachelor of Science in Computer Science, University of Technology (2018)'
-    ],
-    certifications: [
-      'AWS Certified Developer',
-      'Google Cloud Professional Developer'
-    ]
-  };
+  try {
+    // Call the parse-resume edge function
+    const { data, error } = await supabase.functions.invoke('parse-resume', {
+      body: { fileContent, fileName: resumeFile.name }
+    });
+    
+    if (error) {
+      console.error('Error parsing resume:', error);
+      throw new Error(`Error parsing resume: ${error.message}`);
+    }
+    
+    return data as ResumeData;
+  } catch (error) {
+    console.error('Error calling parse-resume function:', error);
+    throw error;
+  }
 };
 
 export const parseJobDescription = async (jobDescription: string): Promise<JobData> => {
   console.log('Parsing job description');
   
-  // In the real implementation, this would:
-  // 1. Call a Supabase Edge Function that uses Gemini API to parse the job description
-  // 2. Return structured data from the job description
-  
-  // For now, return mock data
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  return {
-    requiredSkills: ['React', 'JavaScript', 'HTML', 'CSS', 'Redux'],
-    preferredSkills: ['TypeScript', 'Next.js', 'GraphQL'],
-    responsibilities: [
-      'Develop and maintain web applications',
-      'Collaborate with the design team',
-      'Optimize applications for performance'
-    ],
-    requirements: [
-      '3+ years of experience with React',
-      'Proficient in JavaScript and HTML/CSS',
-      'Experience with state management libraries'
-    ]
-  };
+  try {
+    // Call the parse-job edge function
+    const { data, error } = await supabase.functions.invoke('parse-job', {
+      body: { jobDescription }
+    });
+    
+    if (error) {
+      console.error('Error parsing job description:', error);
+      throw new Error(`Error parsing job description: ${error.message}`);
+    }
+    
+    return data as JobData;
+  } catch (error) {
+    console.error('Error calling parse-job function:', error);
+    throw error;
+  }
 };
 
 export const analyzeMatch = async (resumeData: ResumeData, jobData: JobData): Promise<MatchResult> => {
   console.log('Analyzing match between resume and job');
   
-  // In the real implementation, this would:
-  // 1. Call a Supabase Edge Function that uses OpenAI API to analyze the match
-  // 2. Calculate match score, identify matching and missing skills, and generate suggestions
+  try {
+    // Call the analyze-match edge function
+    const { data, error } = await supabase.functions.invoke('analyze-match', {
+      body: { resumeData, jobData }
+    });
+    
+    if (error) {
+      console.error('Error analyzing match:', error);
+      throw new Error(`Error analyzing match: ${error.message}`);
+    }
+    
+    return data as MatchResult;
+  } catch (error) {
+    console.error('Error calling analyze-match function:', error);
+    throw error;
+  }
+};
+
+export const uploadResume = async (userId: string, resumeFile: File): Promise<string> => {
+  const timestamp = Date.now();
+  const filePath = `${userId}/${timestamp}_${resumeFile.name.replace(/\s+/g, '_')}`;
   
-  // For now, simulate the analysis
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  const { data, error } = await supabase.storage
+    .from('resumes')
+    .upload(filePath, resumeFile, {
+      cacheControl: '3600',
+      upsert: false,
+    });
   
-  // Calculate matching skills
-  const matchingSkills = resumeData.skills.filter(skill => 
-    jobData.requiredSkills.includes(skill) || jobData.preferredSkills.includes(skill)
-  );
+  if (error) {
+    console.error('Error uploading resume:', error);
+    throw new Error(`Error uploading resume: ${error.message}`);
+  }
   
-  // Calculate missing skills
-  const missingSkills = [...jobData.requiredSkills, ...jobData.preferredSkills].filter(
-    skill => !resumeData.skills.includes(skill)
-  );
+  const { data: urlData } = await supabase.storage
+    .from('resumes')
+    .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
   
-  // Calculate match score (simple algorithm for mock)
-  const requiredSkillsMatch = jobData.requiredSkills.filter(
-    skill => resumeData.skills.includes(skill)
-  ).length / jobData.requiredSkills.length;
-  
-  const preferredSkillsMatch = jobData.preferredSkills.filter(
-    skill => resumeData.skills.includes(skill)
-  ).length / jobData.preferredSkills.length;
-  
-  // Weight required skills more heavily
-  const overallScore = Math.floor((requiredSkillsMatch * 0.7 + preferredSkillsMatch * 0.3) * 100);
-  
-  return {
-    overallScore,
-    matchingSkills,
-    missingSkills,
-    suggestions: [
-      'Add more details about your React experience',
-      'Highlight any Next.js projects you\'ve worked on',
-      'Include metrics and achievements in your experience section',
-      'Consider adding GraphQL to your skill set'
-    ],
-    improved: 'Your optimized resume would focus more on your React projects, include specific metrics of success, and highlight your experience with state management libraries like Redux.'
-  };
+  return urlData?.signedUrl || '';
 };
 
 // Save analysis to user history
@@ -123,56 +111,98 @@ export const saveAnalysis = async (
   jobTitle: string, 
   matchResult: MatchResult, 
   resumeFile: File, 
+  resumeData: ResumeData,
+  jobData: JobData,
   jobDescription: string
 ): Promise<string> => {
   console.log('Saving analysis to history for user:', userId);
   
-  // In the real implementation, this would:
-  // 1. Store the analysis result in Supabase
-  // 2. Link it to the user's account
+  // Upload resume file to Storage
+  let resumeUrl = '';
+  try {
+    resumeUrl = await uploadResume(userId, resumeFile);
+  } catch (error) {
+    console.error('Resume upload failed but continuing with analysis save:', error);
+  }
   
-  // For now, return a mock analysis ID
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return 'analysis-' + Date.now().toString();
+  try {
+    // Call the save-analysis edge function
+    const { data, error } = await supabase.functions.invoke('save-analysis', {
+      body: {
+        userId,
+        jobTitle,
+        matchResult,
+        resumeData,
+        jobData,
+        jobDescription,
+        resumeUrl
+      }
+    });
+    
+    if (error) {
+      console.error('Error saving analysis:', error);
+      throw new Error(`Error saving analysis: ${error.message}`);
+    }
+    
+    return data.analysisId;
+  } catch (error) {
+    console.error('Error calling save-analysis function:', error);
+    throw error;
+  }
 };
 
 // Get user's analysis history
 export const getAnalysisHistory = async (userId: string): Promise<any[]> => {
   console.log('Fetching analysis history for user:', userId);
   
-  // In the real implementation, this would:
-  // 1. Fetch the user's analysis history from Supabase
-  
-  // For now, return mock history
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return [
-    {
-      id: 'analysis-1',
-      date: new Date().toISOString(),
-      jobTitle: 'Senior Frontend Developer',
-      matchScore: 85,
-      matchResult: {
-        overallScore: 85,
-        matchingSkills: ['React', 'JavaScript', 'TypeScript', 'HTML', 'CSS'],
-        missingSkills: ['Next.js', 'GraphQL'],
-        suggestions: ['Add Next.js experience', 'Learn GraphQL'],
-        improved: 'Focus on React experience and add Next.js projects.'
-      }
-    },
-    {
-      id: 'analysis-2',
-      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      jobTitle: 'Full Stack Developer',
-      matchScore: 72,
-      matchResult: {
-        overallScore: 72,
-        matchingSkills: ['React', 'JavaScript', 'HTML', 'CSS'],
-        missingSkills: ['Node.js', 'MongoDB', 'Express'],
-        suggestions: ['Add backend experience', 'Learn MongoDB'],
-        improved: 'Highlight any backend projects you\'ve worked on.'
-      }
+  try {
+    // Call the get-analysis-history edge function
+    const { data, error } = await supabase.functions.invoke('get-analysis-history', {
+      body: {},
+      query: { userId }
+    });
+    
+    if (error) {
+      console.error('Error fetching analysis history:', error);
+      throw new Error(`Error fetching analysis history: ${error.message}`);
     }
-  ];
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error calling get-analysis-history function:', error);
+    throw error;
+  }
+};
+
+// Get a specific analysis by ID
+export const getAnalysisDetail = async (analysisId: string): Promise<any> => {
+  console.log('Fetching analysis detail for ID:', analysisId);
+  
+  try {
+    // Call the get-analysis-detail edge function
+    const { data, error } = await supabase.functions.invoke('get-analysis-detail', {
+      body: {},
+      query: { analysisId }
+    });
+    
+    if (error) {
+      console.error('Error fetching analysis detail:', error);
+      throw new Error(`Error fetching analysis detail: ${error.message}`);
+    }
+    
+    return data || null;
+  } catch (error) {
+    console.error('Error calling get-analysis-detail function:', error);
+    throw error;
+  }
+};
+
+// Helper function to read file content as text
+const readFileAsText = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
 };

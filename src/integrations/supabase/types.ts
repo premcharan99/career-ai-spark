@@ -9,7 +9,185 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      job_data: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          id: string
+          preferred_skills: string[]
+          required_skills: string[]
+          requirements: string[]
+          responsibilities: string[]
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          preferred_skills: string[]
+          required_skills: string[]
+          requirements: string[]
+          responsibilities: string[]
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          preferred_skills?: string[]
+          required_skills?: string[]
+          requirements?: string[]
+          responsibilities?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_data_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "resume_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_data_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          analyses_used: number
+          created_at: string
+          email: string
+          id: string
+          max_analyses: number
+          subscription_status: string
+          subscription_tier: string
+          updated_at: string
+        }
+        Insert: {
+          analyses_used?: number
+          created_at?: string
+          email: string
+          id: string
+          max_analyses?: number
+          subscription_status?: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Update: {
+          analyses_used?: number
+          created_at?: string
+          email?: string
+          id?: string
+          max_analyses?: number
+          subscription_status?: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resume_analyses: {
+        Row: {
+          created_at: string
+          id: string
+          improved_content: string
+          job_description: string
+          job_title: string
+          match_score: number
+          matching_skills: string[]
+          missing_skills: string[]
+          resume_url: string | null
+          suggestions: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          improved_content: string
+          job_description: string
+          job_title: string
+          match_score: number
+          matching_skills: string[]
+          missing_skills: string[]
+          resume_url?: string | null
+          suggestions: string[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          improved_content?: string
+          job_description?: string
+          job_title?: string
+          match_score?: number
+          matching_skills?: string[]
+          missing_skills?: string[]
+          resume_url?: string | null
+          suggestions?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resume_data: {
+        Row: {
+          analysis_id: string | null
+          certifications: string[]
+          created_at: string
+          education: string[]
+          experience: string[]
+          id: string
+          skills: string[]
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          certifications: string[]
+          created_at?: string
+          education: string[]
+          experience: string[]
+          id?: string
+          skills: string[]
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          certifications?: string[]
+          created_at?: string
+          education?: string[]
+          experience?: string[]
+          id?: string
+          skills?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_data_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "resume_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_data_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

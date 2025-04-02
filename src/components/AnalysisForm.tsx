@@ -12,9 +12,10 @@ interface AnalysisFormProps {
   onResumeSelected: (file: File) => void;
   onJobDescriptionSubmit: (description: string) => void;
   isLoading: boolean;
+  disabled?: boolean;
 }
 
-const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading }: AnalysisFormProps) => {
+const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, disabled = false }: AnalysisFormProps) => {
   const [jobDescription, setJobDescription] = useState('');
   const [jobUrl, setJobUrl] = useState('');
 
@@ -113,6 +114,23 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading }: A
       });
     }
   };
+
+  if (disabled) {
+    return (
+      <div className="p-8 text-center bg-white rounded-lg shadow">
+        <h3 className="text-lg font-medium text-red-600 mb-2">Analysis Limit Reached</h3>
+        <p className="mb-4 text-gray-600">
+          You've reached your limit of free resume analyses. Please upgrade your plan to continue.
+        </p>
+        <Button 
+          onClick={() => window.location.href = '/pricing'}
+          className="bg-primary"
+        >
+          Upgrade Now
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

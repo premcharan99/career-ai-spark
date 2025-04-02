@@ -1,1 +1,20 @@
+
 project_id = "ghekizltpiqfstegzgyu"
+
+[functions.parse-resume]
+verify_jwt = true
+
+[functions.parse-job]
+verify_jwt = true
+
+[functions.analyze-match]
+verify_jwt = true
+
+[functions.save-analysis]
+verify_jwt = true
+
+[functions.get-analysis-history]
+verify_jwt = true
+
+[functions.get-analysis-detail]
+verify_jwt = true

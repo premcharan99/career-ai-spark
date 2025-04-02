@@ -1,4 +1,7 @@
 
+// This file is now deprecated. All functionality has been moved to AIService.ts.
+// This is kept as a reference but will be removed in future updates.
+
 import { MatchResult } from '@/components/AnalysisResult';
 
 // This is a mock service that will be replaced with real API calls

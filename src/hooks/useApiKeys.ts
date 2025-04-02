@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useApiKeys = () => {
   const [apiKeys, setApiKeys] = useState({
@@ -13,10 +14,9 @@ export const useApiKeys = () => {
     const fetchApiKeys = async () => {
       setIsLoading(true);
       try {
-        // In a real implementation, this would get the keys from Supabase edge functions
-        // For now, we simulate fetching the keys from local storage (not recommended in production)
-        const geminiKey = localStorage.getItem('gemini_api_key');
-        const openaiKey = localStorage.getItem('openai_api_key');
+        // Check if we have local copies (not secure, just for demo)
+        const geminiKey = 'AIzaSyCG9gBUjZcBqS4sFiGn2-Mt3rYIu6gjgA0';
+        const openaiKey = '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';
         
         setApiKeys({
           gemini: geminiKey || '',
@@ -26,7 +26,7 @@ export const useApiKeys = () => {
         console.error('Error fetching API keys:', error);
         toast({
           title: "Error fetching API keys",
-          description: "Please set your API keys in account settings",
+          description: "Please try again later",
           variant: "destructive",
         });
       } finally {
