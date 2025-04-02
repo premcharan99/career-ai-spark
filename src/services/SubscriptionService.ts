@@ -90,33 +90,29 @@ export const getRemainingAnalyses = async (userId: string): Promise<Subscription
   }
 };
 
-// Upgrade a user's subscription (would be connected to payment in a real implementation)
-export const upgradeSubscription = async (userId: string, newTier: 'free' | 'lite' | 'pro'): Promise<boolean> => {
+// Process payment and upgrade subscription
+export const processPayment = async (userId: string, plan: 'free' | 'lite' | 'pro'): Promise<boolean> => {
   try {
-    // Map subscription tiers to their analysis limits
-    const tierLimits = {
-      free: 5,
-      lite: 20,
-      pro: 100
-    };
+    console.log(`Processing payment for plan: ${plan}`);
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        subscription_tier: newTier,
-        max_analyses: tierLimits[newTier],
-        subscription_status: 'active'
-      })
-      .eq('id', userId);
+    const { data, error } = await supabase.functions.invoke('process-payment', {
+      body: { userId, plan }
+    });
     
     if (error) {
-      console.error('Error upgrading subscription:', error);
-      throw new Error(`Error upgrading subscription: ${error.message}`);
+      console.error('Error processing payment:', error);
+      throw new Error(`Error processing payment: ${error.message}`);
     }
     
-    return true;
+    console.log('Payment response:', data);
+    return data.success;
   } catch (error) {
-    console.error('Error in upgradeSubscription:', error);
+    console.error('Error in processPayment:', error);
     return false;
   }
+};
+
+// Upgrade a user's subscription (for backward compatibility)
+export const upgradeSubscription = async (userId: string, newTier: 'free' | 'lite' | 'pro'): Promise<boolean> => {
+  return processPayment(userId, newTier);
 };

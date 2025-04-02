@@ -15,7 +15,7 @@ import { ArrowLeft, CreditCard, LogOut, Save, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Account = () => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -141,18 +141,18 @@ const Account = () => {
                     <h4 className="text-sm font-medium">Subscription</h4>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Current Plan</span>
-                      <Badge variant={user?.subscription === 'pro' ? 'default' : 'secondary'}>
-                        {user?.subscription.toUpperCase()}
+                      <Badge variant={profile?.subscription_tier === 'pro' ? 'default' : 'secondary'}>
+                        {profile?.subscription_tier.toUpperCase()}
                       </Badge>
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs">
                         <span>Usage</span>
-                        <span>{user?.analysesCount} / {user?.analysesLimit}</span>
+                        <span>{profile?.analyses_used} / {profile?.max_analyses}</span>
                       </div>
-                      <Progress value={(user?.analysesCount / user?.analysesLimit) * 100} />
+                      <Progress value={(profile?.analyses_used / profile?.max_analyses) * 100} />
                     </div>
-                    {user?.subscription !== 'pro' && (
+                    {profile?.subscription_tier !== 'pro' && (
                       <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => navigate('/pricing')}>
                         Upgrade Plan
                       </Button>
@@ -275,63 +275,50 @@ const Account = () => {
                       <h3 className="text-sm font-medium">Current Subscription</h3>
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-medium">{user?.subscription.toUpperCase()} Plan</p>
+                          <p className="font-medium">{profile?.subscription_tier.toUpperCase()} Plan</p>
                           <p className="text-sm text-muted-foreground">
-                            {user?.subscription === 'free' ? 'Free forever' : 
-                             user?.subscription === 'lite' ? '$5.99/month' : '$8.99/month'}
+                            {profile?.subscription_tier === 'free' ? 'Free forever' : 
+                             profile?.subscription_tier === 'lite' ? '$9.99/month' : '$19.99/month'}
                           </p>
                         </div>
                         <Button variant="outline" size="sm" onClick={() => navigate('/pricing')}>
-                          {user?.subscription === 'free' ? 'Upgrade' : 'Change Plan'}
+                          {profile?.subscription_tier === 'free' ? 'Upgrade' : 'Change Plan'}
                         </Button>
                       </div>
                     </div>
                     
                     <Separator />
                     
-                    {user?.subscription !== 'free' && (
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-medium">Payment Method</h3>
-                        <div className="flex items-center justify-between p-3 border rounded-md">
-                          <div className="flex items-center">
-                            <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">Visa ending in 4242</p>
-                              <p className="text-xs text-muted-foreground">Expires 12/2025</p>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            Update
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {user?.subscription !== 'free' && (
+                    {profile?.subscription_tier !== 'free' && (
                       <>
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-medium">Payment Method</h3>
+                          <div className="flex items-center justify-between p-3 border rounded-md">
+                            <div className="flex items-center">
+                              <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium">Payment via Stripe</p>
+                                <p className="text-xs text-muted-foreground">Secure payment processing</p>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')}>
+                              Manage
+                            </Button>
+                          </div>
+                        </div>
+                      
                         <Separator />
                         <div className="space-y-2">
-                          <h3 className="text-sm font-medium">Billing History</h3>
-                          <div className="text-sm">
-                            <div className="flex justify-between py-2">
-                              <span>Nov 1, 2023</span>
-                              <span>${user?.subscription === 'lite' ? '5.99' : '8.99'}</span>
-                            </div>
-                            <div className="flex justify-between py-2">
-                              <span>Oct 1, 2023</span>
-                              <span>${user?.subscription === 'lite' ? '5.99' : '8.99'}</span>
-                            </div>
-                          </div>
+                          <h3 className="text-sm font-medium">Payment History</h3>
+                          <p className="text-sm text-gray-500">Your payment history will appear here after your first successful payment.</p>
                         </div>
                       </>
                     )}
                   </CardContent>
-                  <CardFooter>
-                    {user?.subscription !== 'free' && (
-                      <Button variant="outline" className="text-destructive hover:text-destructive">
-                        Cancel Subscription
-                      </Button>
-                    )}
+                  <CardFooter className="flex justify-end">
+                    <Button variant="default" onClick={() => navigate('/pricing')}>
+                      Upgrade Plan
+                    </Button>
                   </CardFooter>
                 </Card>
               </TabsContent>

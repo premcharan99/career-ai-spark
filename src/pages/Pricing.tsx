@@ -6,7 +6,7 @@ import PageLayout from '@/components/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, HelpCircle } from 'lucide-react';
-import { upgradeSubscription, subscriptionTiers } from '@/services/SubscriptionService';
+import { processPayment, subscriptionTiers } from '@/services/SubscriptionService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 
@@ -40,7 +40,7 @@ const Pricing = () => {
     setIsUpgrading(tierId);
     
     try {
-      const success = await upgradeSubscription(user.id, tierId);
+      const success = await processPayment(user.id, tierId);
       
       if (success) {
         await updateProfile();
@@ -49,6 +49,8 @@ const Pricing = () => {
           description: `Your subscription has been upgraded to ${tierId.toUpperCase()}`,
         });
         navigate('/dashboard');
+      } else {
+        throw new Error("Payment processing failed");
       }
     } catch (error) {
       console.error('Error upgrading:', error);
@@ -173,7 +175,7 @@ const Pricing = () => {
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900">What payment methods do you accept?</h4>
-                  <p className="mt-1 text-gray-500">We accept all major credit cards, debit cards, and PayPal.</p>
+                  <p className="mt-1 text-gray-500">We accept all major credit cards through our secure payment processor.</p>
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900">Do you offer refunds?</h4>
