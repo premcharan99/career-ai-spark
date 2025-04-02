@@ -8,6 +8,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
+import AnalysisHistory from "./pages/AnalysisHistory";
+import AnalysisResultPage from "./pages/AnalysisResult";
 import Pricing from "./pages/Pricing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -37,6 +39,16 @@ const App = () => (
             <Route path="/analysis" element={
               <ProtectedRoute>
                 <Analysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/history" element={
+              <ProtectedRoute>
+                <AnalysisHistory />
+              </ProtectedRoute>
+            } />
+            <Route path="/analysis-result/:id" element={
+              <ProtectedRoute>
+                <AnalysisResultPage />
               </ProtectedRoute>
             } />
             <Route path="/account" element={

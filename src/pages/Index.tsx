@@ -1,138 +1,225 @@
 
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import PageLayout from '@/components/PageLayout';
-import FeatureCard from '@/components/FeaturesCard';
-import { FileUp, BarChart3, Zap, PenTool, Star, SparkleIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import FeaturesCard from '@/components/FeaturesCard';
+import { Award, FileSearch, FileText, Gem, TrendingUp } from 'lucide-react';
 
 const Index = () => {
+  const { user } = useAuth();
+
   return (
     <PageLayout>
-      {/* Hero section */}
-      <div className="relative bg-gradient-to-b from-white to-gray-50 overflow-hidden">
-        <div className="fancy-blur-gradient top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="fancy-blur-gradient bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-28 text-center relative z-10">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
-            <span className="block">AI-Powered Resume</span>
-            <span className="block bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent">
-              Job Match Analysis
-            </span>
-          </h1>
-          <p className="mt-6 max-w-2xl mx-auto text-xl text-gray-500">
-            Optimize your resume for each job application with AI-driven insights and personalized suggestions.
-          </p>
-          <div className="mt-10 flex justify-center space-x-4">
-            <Link to="/signup">
-              <Button size="lg" className="px-8 py-6 rounded-md text-base">
-                Get Started
-              </Button>
-            </Link>
-            <Link to="/pricing">
-              <Button size="lg" variant="outline" className="px-8 py-6 rounded-md text-base">
-                View Pricing
-              </Button>
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg px-6 py-8 shadow-sm border border-gray-100">
-              <p className="text-4xl font-bold text-brand-600">95%</p>
-              <p className="mt-2 text-gray-500">Accuracy in skills matching</p>
-            </div>
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg px-6 py-8 shadow-sm border border-gray-100">
-              <p className="text-4xl font-bold text-brand-600">3x</p>
-              <p className="mt-2 text-gray-500">Higher interview chance</p>
-            </div>
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg px-6 py-8 shadow-sm border border-gray-100">
-              <p className="text-4xl font-bold text-brand-600">2M+</p>
-              <p className="mt-2 text-gray-500">Resumes analyzed</p>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-brand-50 to-blue-50 py-16 md:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4">
+              AI-Powered Resume Analysis
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-600 mb-8">
+              Get your resume analyzed by AI and improve your chances of landing your dream job
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              {user ? (
+                <Link to="/dashboard">
+                  <Button size="lg" className="px-8">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/signup">
+                    <Button size="lg" className="px-8">
+                      Get Started
+                    </Button>
+                  </Link>
+                  <Link to="/signin">
+                    <Button size="lg" variant="outline" className="px-8">
+                      Sign In
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Features section */}
-      <div className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">
-              Advanced Features
-            </h2>
-            <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500">
-              Our AI-powered platform provides everything you need to optimize your resume
+      {/* Features Section */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">How It Works</h2>
+            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+              Our platform uses advanced AI to analyze your resume against job descriptions and provide actionable insights
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              title="Resume Upload"
-              description="Upload your resume in PDF or Word format and let our AI extract and analyze your skills and experience."
-              icon={FileUp}
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            <FeaturesCard
+              icon={FileText}
+              title="Upload Resume"
+              description="Upload your resume in PDF or DOCX format and our AI will extract your skills and experience"
             />
-            <FeatureCard
-              title="Match Analysis"
-              description="Get a detailed match percentage showing how well your resume aligns with the job description."
-              icon={BarChart3}
+            <FeaturesCard
+              icon={FileSearch}
+              title="Add Job Description"
+              description="Paste a job description or provide a link to a job posting you're interested in"
             />
-            <FeatureCard
-              title="Real-time Processing"
-              description="Receive lightning-fast analysis results in seconds, powered by cutting-edge AI."
-              icon={Zap}
+            <FeaturesCard
+              icon={TrendingUp}
+              title="Get Analysis"
+              description="Receive a comprehensive analysis with a match score, highlighted skills, and ATS optimization tips"
             />
-            <FeatureCard
-              title="Optimization Suggestions"
-              description="Get personalized suggestions to improve your resume for each specific job application."
-              icon={PenTool}
-            />
-            <FeatureCard
-              title="ATS Compatibility"
-              description="Ensure your resume passes through Applicant Tracking Systems with our ATS optimization."
-              icon={Star}
-            />
-            <FeatureCard
-              title="AI-Powered Insights"
-              description="Leverage the power of Google Gemini and OpenAI for the most accurate resume analysis."
-              icon={SparkleIcon}
+            <FeaturesCard
+              icon={Award}
+              title="Improve & Apply"
+              description="Follow our personalized suggestions to improve your resume and increase your chances of getting hired"
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* CTA section */}
-      <div className="bg-brand-600">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            <span className="block">Ready to boost your job search?</span>
-            <span className="block text-brand-200">Start analyzing your resume today.</span>
-          </h2>
-          <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
-            <div className="inline-flex rounded-md shadow">
-              <Link to="/signup">
-                <Button 
-                  size="lg" 
-                  className="px-8 py-6 text-base bg-white text-brand-600 hover:bg-gray-100 border-transparent"
-                >
-                  Get Started
-                </Button>
+      {/* Subscription Plans */}
+      <section className="py-16 md:py-24 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">Subscription Plans</h2>
+            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+              Choose the plan that's right for you and take your job search to the next level
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            <div className="bg-white p-8 rounded-lg shadow-md">
+              <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mb-6 mx-auto">
+                <Gem className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">Free</h3>
+              <p className="text-3xl font-bold text-center mb-6">$0</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>5 Resume Analyses</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Basic Match Score</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Basic Skill Matching</span>
+                </li>
+              </ul>
+              <Link to="/signup" className="block w-full">
+                <Button variant="outline" className="w-full">Get Started</Button>
               </Link>
             </div>
-            <div className="ml-3 inline-flex rounded-md shadow">
-              <Link to="/pricing">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="px-8 py-6 text-base bg-transparent text-white border-white hover:bg-brand-700"
-                >
-                  Learn More
-                </Button>
+
+            <div className="bg-white p-8 rounded-lg shadow-md border-2 border-primary transform scale-105">
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-white text-sm font-bold py-1 px-4 rounded-full">
+                MOST POPULAR
+              </div>
+              <div className="flex items-center justify-center h-16 w-16 rounded-full bg-brand-100 text-brand-600 mb-6 mx-auto">
+                <Gem className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">Lite</h3>
+              <p className="text-3xl font-bold text-center mb-6">$5.99<span className="text-base font-normal">/month</span></p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>10 Resume Analyses per Month</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Basic Match Score (%)</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Highlight Matching & Missing Skills</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Basic ATS Compatibility Check</span>
+                </li>
+              </ul>
+              <Link to="/pricing" className="block w-full">
+                <Button className="w-full">Choose Plan</Button>
+              </Link>
+            </div>
+
+            <div className="bg-white p-8 rounded-lg shadow-md">
+              <div className="flex items-center justify-center h-16 w-16 rounded-full bg-purple-100 text-purple-600 mb-6 mx-auto">
+                <Gem className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold text-center mb-2">Pro</h3>
+              <p className="text-3xl font-bold text-center mb-6">$8.99<span className="text-base font-normal">/month</span></p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>100 Resume Analyses per Month</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Advanced Match Score (%)</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Advanced ATS Compatibility Check</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>AI-Powered Cover Letter Generator</span>
+                </li>
+              </ul>
+              <Link to="/pricing" className="block w-full">
+                <Button variant="outline" className="w-full">Choose Plan</Button>
               </Link>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 md:py-24 bg-brand-600 text-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-6">Ready to supercharge your job search?</h2>
+            <p className="text-xl opacity-90 mb-8">
+              Get started today and let our AI help you land your dream job
+            </p>
+            <Link to={user ? "/dashboard" : "/signup"}>
+              <Button size="lg" variant="secondary" className="px-8">
+                {user ? 'Go to Dashboard' : 'Get Started for Free'}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
     </PageLayout>
   );
 };

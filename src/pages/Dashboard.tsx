@@ -6,7 +6,7 @@ import PageLayout from '@/components/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { PlusCircle, FileText, Clock, ChevronRight } from 'lucide-react';
+import { PlusCircle, FileText, Clock, ChevronRight, User } from 'lucide-react';
 
 interface AnalysisHistory {
   id: string;

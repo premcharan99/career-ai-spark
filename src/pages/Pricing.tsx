@@ -1,180 +1,185 @@
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { Check, HelpCircle } from 'lucide-react';
+import { upgradeSubscription, subscriptionTiers } from '@/services/SubscriptionService';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
-
-const pricingPlans = [
-  {
-    id: 'free',
-    name: 'Free',
-    description: 'Basic features for job seekers',
-    price: 0,
-    features: [
-      '5 Resume Analyses per Month',
-      'Basic Match Score (%)',
-      'Highlight Matching Skills',
-      'Highlight Missing Skills',
-      'Basic ATS Compatibility Check',
-    ],
-    cta: 'Get Started',
-    popular: false,
-  },
-  {
-    id: 'lite',
-    name: 'Lite',
-    description: 'Everything in Free, plus more analyses',
-    price: 5.99,
-    features: [
-      '10 Resume Analyses per Month',
-      'Basic Match Score (%)',
-      'Highlight Matching & Missing Skills',
-      'Basic ATS Compatibility Check',
-      'Resume Formatting Suggestions',
-    ],
-    cta: 'Subscribe',
-    popular: false,
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Advanced features for serious job seekers',
-    price: 8.99,
-    features: [
-      '100 Resume Analyses per Month',
-      'Advanced Match Score (%)',
-      'Highlight Matching & Missing Skills',
-      'Advanced ATS Compatibility Check',
-      'AI-Powered Cover Letter Generator',
-      'Priority Support',
-    ],
-    cta: 'Subscribe',
-    popular: true,
-  },
-];
 
 const Pricing = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
 
-  const handlePlanSelect = (planId: string) => {
+  const handleUpgrade = async (tierId: string) => {
     if (!user) {
-      navigate('/signup');
+      toast({
+        title: "Login required",
+        description: "Please sign in to upgrade your subscription",
+        variant: "destructive",
+      });
+      navigate('/signin');
       return;
     }
 
-    setSelectedPlan(planId);
-    
-    // This will be replaced with Stripe checkout in the real implementation
-    if (planId !== 'free') {
+    // If user already has this plan
+    if (user.subscription === tierId) {
       toast({
-        title: "Coming Soon",
-        description: "Stripe payment integration will be available soon",
+        title: "Already subscribed",
+        description: `You are already on the ${tierId.toUpperCase()} plan`,
       });
-    } else {
-      toast({
-        title: "Free Plan Selected",
-        description: "You're now on the Free plan",
-      });
-      navigate('/dashboard');
+      navigate('/account');
+      return;
     }
+
+    setIsUpgrading(tierId);
+    
+    try {
+      const success = await upgradeSubscription(user.id, tierId);
+      
+      if (success) {
+        // In a real app, this would be handled by a webhook that updates the user's subscription
+        // For now, we just simulate the upgrade
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error);
+      toast({
+        title: "Upgrade failed",
+        description: "There was an error upgrading your subscription. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpgrading(null);
+    }
+  };
+
+  // Calculate yearly prices (20% discount)
+  const getPrice = (monthlyPrice: number) => {
+    if (billingPeriod === 'yearly') {
+      const yearlyPrice = monthlyPrice * 12 * 0.8; // 20% discount
+      return yearlyPrice.toFixed(2);
+    }
+    return monthlyPrice.toFixed(2);
+  };
+
+  const isCurrentPlan = (tierId: string) => {
+    return user?.subscription === tierId;
   };
 
   return (
     <PageLayout>
-      <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
+      <div className="w-full max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
             Simple, Transparent Pricing
           </h1>
-          <p className="mt-5 max-w-xl mx-auto text-xl text-gray-500">
-            Choose the plan that fits your needs
+          <p className="mt-4 text-xl text-gray-500 max-w-3xl mx-auto">
+            Choose the plan that's right for you and take your resume to the next level with AI-powered analysis
           </p>
+          
+          <div className="mt-8 flex justify-center">
+            <Tabs
+              defaultValue="monthly"
+              value={billingPeriod}
+              onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}
+              className="w-72"
+            >
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                <TabsTrigger value="yearly">
+                  Yearly <span className="ml-1 text-xs text-green-600 font-semibold">Save 20%</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
         
-        <div className="mt-12 space-y-12 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-x-8">
-          {pricingPlans.map((plan) => (
+        <div className="grid gap-8 lg:grid-cols-3">
+          {subscriptionTiers.map((tier) => (
             <Card 
-              key={plan.id} 
-              className={`flex flex-col ${
-                plan.popular ? 'border-brand-500 shadow-md relative' : ''
-              }`}
+              key={tier.id} 
+              className={`flex flex-col ${tier.id === 'pro' ? 'border-primary shadow-lg' : ''}`}
             >
-              {plan.popular && (
-                <div className="absolute top-0 right-0 -mt-3 mr-3">
-                  <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-brand-100 text-brand-800">
-                    Popular
-                  </span>
+              {tier.id === 'pro' && (
+                <div className="bg-primary text-primary-foreground text-center py-1 text-sm font-medium">
+                  Most Popular
                 </div>
               )}
-              
               <CardHeader>
-                <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
+                <CardTitle className="text-2xl">{tier.name}</CardTitle>
+                <CardDescription>
+                  {tier.id === 'free' ? 'Basic resume analysis' : 
+                   tier.id === 'lite' ? 'Enhanced analysis with ATS optimization' : 
+                   'Complete AI-powered career toolkit'}
+                </CardDescription>
               </CardHeader>
-              
               <CardContent className="flex-grow">
-                <div className="mt-4 mb-8">
-                  <span className="text-4xl font-extrabold text-gray-900">
-                    ${plan.price}
-                  </span>
-                  {plan.price > 0 && (
-                    <span className="text-base font-medium text-gray-500">
-                      /month
-                    </span>
+                <div className="mt-2 mb-6">
+                  {tier.price === 0 ? (
+                    <span className="text-4xl font-extrabold">Free</span>
+                  ) : (
+                    <>
+                      <span className="text-4xl font-extrabold">${getPrice(tier.price)}</span>
+                      <span className="text-gray-500 ml-2">
+                        {billingPeriod === 'monthly' ? '/month' : '/year'}
+                      </span>
+                    </>
                   )}
                 </div>
                 
-                <ul className="space-y-4">
-                  {plan.features.map((feature, index) => (
+                <ul className="space-y-3">
+                  {tier.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <Check className="h-5 w-5 text-brand-500" />
-                      </div>
-                      <span className="ml-3 text-base text-gray-700">{feature}</span>
+                      <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+                      <span className="text-gray-600">{feature}</span>
                     </li>
                   ))}
                 </ul>
               </CardContent>
-              
-              <CardFooter className="pt-6">
-                <Button
-                  className={`w-full ${plan.popular ? 'bg-brand-600 hover:bg-brand-700' : ''}`}
-                  onClick={() => handlePlanSelect(plan.id)}
+              <CardFooter>
+                <Button 
+                  className="w-full" 
+                  variant={tier.id === 'free' ? 'outline' : 'default'}
+                  onClick={() => handleUpgrade(tier.id)}
+                  disabled={isCurrentPlan(tier.id) || !!isUpgrading}
                 >
-                  {plan.cta}
+                  {isUpgrading === tier.id ? 'Processing...' : 
+                   isCurrentPlan(tier.id) ? 'Current Plan' : 
+                   tier.id === 'free' ? 'Get Started' : 'Upgrade'}
                 </Button>
               </CardFooter>
             </Card>
           ))}
         </div>
         
-        <div className="mt-16 text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Frequently Asked Questions</h2>
-          <div className="mt-8 max-w-3xl mx-auto">
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Can I upgrade my plan later?</h3>
-                <p className="mt-2 text-base text-gray-500">
-                  Yes, you can upgrade your plan at any time. Your new benefits will be available immediately.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">How accurate is the matching algorithm?</h3>
-                <p className="mt-2 text-base text-gray-500">
-                  Our AI-powered matching algorithm has over 95% accuracy in identifying relevant skills and experience from both resumes and job descriptions.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Do you offer refunds?</h3>
-                <p className="mt-2 text-base text-gray-500">
-                  Yes, we offer a 7-day money-back guarantee on all paid plans if you're not satisfied.
-                </p>
+        <div className="mt-12 bg-gray-50 rounded-lg p-8">
+          <div className="flex items-start">
+            <HelpCircle className="h-6 w-6 text-primary mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Frequently Asked Questions</h3>
+              <div className="mt-4 grid gap-6 grid-cols-1 md:grid-cols-2">
+                <div>
+                  <h4 className="font-medium text-gray-900">Can I cancel anytime?</h4>
+                  <p className="mt-1 text-gray-500">Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your billing period.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">What payment methods do you accept?</h4>
+                  <p className="mt-1 text-gray-500">We accept all major credit cards, debit cards, and PayPal.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Do you offer refunds?</h4>
+                  <p className="mt-1 text-gray-500">We offer a 14-day money-back guarantee if you're not satisfied with our service.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">What happens when I reach my analysis limit?</h4>
+                  <p className="mt-1 text-gray-500">You can upgrade your plan at any time to increase your analysis limit, or wait until your next billing cycle when your limit resets.</p>
+                </div>
               </div>
             </div>
           </div>
