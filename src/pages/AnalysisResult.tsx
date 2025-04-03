@@ -13,7 +13,7 @@ import { getAnalysisHistory } from '@/services/AIService';
 
 const AnalysisResultPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<{
     jobTitle: string;
@@ -199,19 +199,6 @@ const AnalysisResultPage = () => {
                     <CardContent>
                       <div className="p-6 border rounded-md bg-gray-50">
                         <p className="whitespace-pre-line">{analysis.matchResult.improved}</p>
-                      </div>
-                      
-                      <div className="mt-6">
-                        <p className="text-gray-500 text-sm mb-4">
-                          Note: This is a summary of suggested improvements. 
-                          Upgrade to our Pro plan to generate a complete ATS-optimized resume based on this job description.
-                        </p>
-                        
-                        {user?.subscription !== 'pro' && (
-                          <Button onClick={() => navigate('/pricing')}>
-                            Upgrade to Pro
-                          </Button>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

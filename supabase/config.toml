@@ -46,3 +46,6 @@ verify_jwt = true
 
 [functions.get-analysis-detail]
 verify_jwt = true
+
+[functions.reset-daily-analyses]
+verify_jwt = true
