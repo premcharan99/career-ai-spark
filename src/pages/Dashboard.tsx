@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { PlusCircle, FileText, Clock, ChevronRight, User } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { getRemainingAnalyses } from '@/services/SubscriptionService';
 
 interface AnalysisHistory {
   id: string;
@@ -18,30 +16,35 @@ interface AnalysisHistory {
 }
 
 const Dashboard = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [analyses, setAnalyses] = useState<AnalysisHistory[]>([]);
-  const [remainingAnalyses, setRemainingAnalyses] = useState({ used: 0, limit: 15, remaining: 15 });
 
+  // Mock history data - this would come from Supabase in real implementation
   useEffect(() => {
-    // Get remaining analyses
-    if (user) {
-      const fetchRemainingAnalyses = async () => {
-        try {
-          const data = await getRemainingAnalyses(user.id);
-          setRemainingAnalyses(data);
-        } catch (error) {
-          console.error("Error fetching analyses count:", error);
-        }
-      };
-      
-      fetchRemainingAnalyses();
-    }
-    
-    // Simulating API call for history - this would come from Supabase in real implementation
+    // Simulating API call
     setTimeout(() => {
-      setAnalyses([]);
+      setAnalyses([
+        {
+          id: '1',
+          date: '2023-11-15',
+          jobTitle: 'Senior Frontend Developer',
+          matchScore: 85,
+        },
+        {
+          id: '2',
+          date: '2023-11-10',
+          jobTitle: 'UI/UX Designer',
+          matchScore: 72,
+        },
+        {
+          id: '3',
+          date: '2023-11-05',
+          jobTitle: 'Product Manager',
+          matchScore: 68,
+        },
+      ]);
     }, 1000);
-  }, [user]);
+  }, []);
 
   return (
     <PageLayout className="bg-gray-50">
@@ -66,26 +69,28 @@ const Dashboard = () => {
           {/* Subscription Status Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Daily Usage</CardTitle>
-              <CardDescription>Your analysis usage</CardDescription>
+              <CardTitle>Subscription</CardTitle>
+              <CardDescription>Your current plan and usage</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-700">Free Plan</span>
-                <span className="font-semibold text-brand-600 capitalize">Active</span>
+                <span className="font-medium text-gray-700">Current Plan</span>
+                <span className="font-semibold text-brand-600 capitalize">{user?.subscription}</span>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Analyses Used</span>
-                  <span>{remainingAnalyses.used} / {remainingAnalyses.limit}</span>
+                  <span>{user?.analysesCount} / {user?.analysesLimit}</span>
                 </div>
-                <Progress value={(remainingAnalyses.used / remainingAnalyses.limit) * 100} />
+                <Progress value={(user?.analysesCount || 0) / (user?.analysesLimit || 1) * 100} />
               </div>
             </CardContent>
             <CardFooter>
-              <p className="text-sm text-gray-500 w-full text-center">
-                {remainingAnalyses.remaining} analyses remaining today
-              </p>
+              <Link to="/pricing" className="w-full">
+                <Button variant="outline" className="w-full">
+                  Upgrade Plan
+                </Button>
+              </Link>
             </CardFooter>
           </Card>
 

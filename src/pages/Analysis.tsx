@@ -21,7 +21,6 @@ const Analysis = () => {
   const { user, profile, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [resume, setResume] = useState<File | null>(null);
-  const [resumeText, setResumeText] = useState<string>('');
   const [jobDescription, setJobDescription] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<MatchResult | null>(null);
@@ -29,24 +28,16 @@ const Analysis = () => {
   const [parsedResumeData, setParsedResumeData] = useState<ResumeData | null>(null);
   const [parsedJobData, setParsedJobData] = useState<JobData | null>(null);
   const [analysisAllowed, setAnalysisAllowed] = useState(true);
-  const [remainingAnalyses, setRemainingAnalyses] = useState({ used: 0, limit: 15, remaining: 15 });
 
   useEffect(() => {
     if (profile) {
-      const dailyLimit = 15;
-      const canPerformAnalysis = profile.analyses_used < dailyLimit;
+      const canPerformAnalysis = profile.analyses_used < profile.max_analyses;
       setAnalysisAllowed(canPerformAnalysis);
-      
-      setRemainingAnalyses({
-        used: profile.analyses_used,
-        limit: dailyLimit,
-        remaining: Math.max(0, dailyLimit - profile.analyses_used)
-      });
       
       if (!canPerformAnalysis) {
         toast({
-          title: "Daily analysis limit reached",
-          description: `You've used all ${dailyLimit} analyses for today. Try again tomorrow.`,
+          title: "Analysis limit reached",
+          description: `You've used all ${profile.max_analyses} analyses in your ${profile.subscription_tier} plan. Please upgrade to continue.`,
           variant: "destructive",
         });
       }
@@ -61,31 +52,26 @@ const Analysis = () => {
     });
   };
 
-  const handleResumeTextEntered = (text: string) => {
-    setResumeText(text);
-  };
-
   const extractJobTitle = (description: string): string => {
     // A simple function to extract a job title from a job description
+    // In a real implementation, this would be more sophisticated using AI
     const firstLine = description.split('\n')[0].trim();
     if (firstLine.length < 50) return firstLine;
     
-    const jobTitleMatch = description.match(/job title:?\s*([^\n]+)/i);
-    if (jobTitleMatch && jobTitleMatch[1]) {
-      return jobTitleMatch[1].trim();
+    const commonTitles = [
+      'Software Engineer', 'Frontend Developer', 'Backend Developer',
+      'Full Stack Developer', 'Product Manager', 'Data Scientist',
+      'UX Designer', 'Project Manager', 'Marketing Manager',
+      'Sales Representative', 'Customer Success Manager'
+    ];
+    
+    for (const title of commonTitles) {
+      if (description.toLowerCase().includes(title.toLowerCase())) {
+        return title;
+      }
     }
     
-    const positionMatch = description.match(/position:?\s*([^\n]+)/i);
-    if (positionMatch && positionMatch[1]) {
-      return positionMatch[1].trim();
-    }
-    
-    const roleMatch = description.match(/role:?\s*([^\n]+)/i);
-    if (roleMatch && roleMatch[1]) {
-      return roleMatch[1].trim();
-    }
-    
-    return 'Job Position';
+    return 'Untitled Position';
   };
 
   const handleJobDescriptionSubmit = async (description: string) => {
@@ -110,10 +96,11 @@ const Analysis = () => {
 
     if (!analysisAllowed) {
       toast({
-        title: "Daily analysis limit reached",
-        description: `You've used all ${remainingAnalyses.limit} analyses for today. Try again tomorrow.`,
+        title: "Analysis limit reached",
+        description: `You've used all ${profile?.max_analyses} analyses in your plan. Please upgrade to continue.`,
         variant: "destructive",
       });
+      navigate('/pricing');
       return;
     }
 
@@ -174,7 +161,6 @@ const Analysis = () => {
 
   const handleNewAnalysis = () => {
     setResume(null);
-    setResumeText('');
     setJobDescription('');
     setResult(null);
     setJobTitle('');
@@ -202,18 +188,19 @@ const Analysis = () => {
         </h1>
         
         {/* Analysis Usage Information */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
-          <p className="text-sm text-gray-600">
-            You have used <span className="font-semibold">{remainingAnalyses.used}</span> of your <span className="font-semibold">{remainingAnalyses.limit}</span> analyses today.
-            <span className="ml-2 font-semibold">{remainingAnalyses.remaining}</span> analyses remaining today.
-          </p>
-        </div>
+        {profile && (
+          <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
+            <p className="text-sm text-gray-600">
+              You have used <span className="font-semibold">{profile.analyses_used}</span> of your <span className="font-semibold">{profile.max_analyses}</span> analyses 
+              in your <span className="capitalize font-semibold">{profile.subscription_tier}</span> plan.
+            </p>
+          </div>
+        )}
         
         {(!result || isAnalyzing) ? (
           <div className="max-w-4xl mx-auto">
             <AnalysisForm 
-              onResumeSelected={handleResumeSelect}
-              onResumeTextEntered={handleResumeTextEntered}
+              onResumeSelected={handleResumeSelect} 
               onJobDescriptionSubmit={handleJobDescriptionSubmit}
               isLoading={isAnalyzing}
               disabled={!analysisAllowed}

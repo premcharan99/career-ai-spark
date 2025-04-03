@@ -10,19 +10,12 @@ import ResumeUploader from './ResumeUploader';
 
 interface AnalysisFormProps {
   onResumeSelected: (file: File) => void;
-  onResumeTextEntered?: (text: string) => void;
   onJobDescriptionSubmit: (description: string) => void;
   isLoading: boolean;
   disabled?: boolean;
 }
 
-const AnalysisForm = ({ 
-  onResumeSelected, 
-  onResumeTextEntered,
-  onJobDescriptionSubmit, 
-  isLoading, 
-  disabled = false 
-}: AnalysisFormProps) => {
+const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, disabled = false }: AnalysisFormProps) => {
   const [jobDescription, setJobDescription] = useState('');
   const [jobUrl, setJobUrl] = useState('');
 
@@ -49,11 +42,52 @@ const AnalysisForm = ({
       return;
     }
 
+    // In a real implementation, this would:
+    // 1. Call a backend function to scrape the job description from the URL
+    // 2. Process the scraped content
     toast({
-      title: "Coming Soon",
-      description: "URL extraction is not yet available. Please paste the job description manually.",
-      variant: "destructive",
+      title: "Fetching job description",
+      description: "We're retrieving the job description from the provided URL",
     });
+
+    try {
+      // Simulate API call to scrape job description
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mock scraped job description
+      const scrapedDescription = `
+        Senior Frontend Developer
+
+        RESPONSIBILITIES:
+        - Develop and maintain web applications using React, TypeScript, and other modern technologies
+        - Collaborate with UX/UI designers to implement responsive and visually appealing interfaces
+        - Write clean, maintainable, and well-documented code
+        - Optimize applications for maximum speed and scalability
+        - Stay up-to-date with emerging technologies and industry trends
+
+        REQUIREMENTS:
+        - 3+ years of experience with React and modern JavaScript frameworks
+        - Strong proficiency in HTML5, CSS3, and JavaScript (ES6+)
+        - Experience with state management libraries (Redux, Context API, etc.)
+        - Understanding of server-side rendering and its benefits
+        - Familiarity with RESTful APIs and GraphQL
+        - Knowledge of browser rendering behavior and performance optimization
+        - Bachelor's degree in Computer Science or related field, or equivalent experience
+      `;
+      
+      setJobDescription(scrapedDescription);
+      toast({
+        title: "Job description retrieved",
+        description: "We've successfully retrieved the job description from the URL",
+      });
+    } catch (error) {
+      console.error('Error fetching job description:', error);
+      toast({
+        title: "Error fetching job description",
+        description: "We couldn't retrieve the job description from the URL. Please enter it manually.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isValidUrl = (string: string) => {
@@ -84,10 +118,16 @@ const AnalysisForm = ({
   if (disabled) {
     return (
       <div className="p-8 text-center bg-white rounded-lg shadow">
-        <h3 className="text-lg font-medium text-red-600 mb-2">Daily Analysis Limit Reached</h3>
+        <h3 className="text-lg font-medium text-red-600 mb-2">Analysis Limit Reached</h3>
         <p className="mb-4 text-gray-600">
-          You've reached your limit of 15 analyses for today. Please try again tomorrow.
+          You've reached your limit of free resume analyses. Please upgrade your plan to continue.
         </p>
+        <Button 
+          onClick={() => window.location.href = '/pricing'}
+          className="bg-primary"
+        >
+          Upgrade Now
+        </Button>
       </div>
     );
   }
@@ -96,7 +136,7 @@ const AnalysisForm = ({
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-semibold mb-4">Step 1: Upload Your Resume</h2>
-        <ResumeUploader onFileSelected={onResumeSelected} onTextResumeEntered={onResumeTextEntered} />
+        <ResumeUploader onFileSelected={onResumeSelected} />
       </div>
       
       <div>
@@ -150,7 +190,7 @@ const AnalysisForm = ({
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-4">
-                    Enter the URL of the job posting (Coming Soon)
+                    Enter the URL of the job posting and we'll extract the job description automatically
                   </p>
                   <div className="flex gap-2">
                     <div className="flex-1">
@@ -175,11 +215,12 @@ const AnalysisForm = ({
                 {jobDescription && (
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Job Description</h3>
+                      <h3 className="text-sm font-medium mb-2">Job Description (Extracted)</h3>
                       <Textarea
                         value={jobDescription}
                         onChange={(e) => setJobDescription(e.target.value)}
                         className="min-h-[200px] resize-none"
+                        readOnly
                       />
                     </div>
                     

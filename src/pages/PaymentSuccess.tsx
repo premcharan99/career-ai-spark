@@ -14,14 +14,7 @@ const PaymentSuccess = () => {
   useEffect(() => {
     // Update the user profile to reflect the subscription change
     updateProfile();
-    
-    // Auto redirect to dashboard after 3 seconds
-    const timer = setTimeout(() => {
-      navigate('/dashboard');
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, [updateProfile, navigate]);
+  }, [updateProfile]);
 
   return (
     <PageLayout>
@@ -31,16 +24,19 @@ const PaymentSuccess = () => {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <CheckCircle className="h-10 w-10 text-green-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Success!</CardTitle>
+            <CardTitle className="text-2xl font-bold">Payment Successful!</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600">
-              Your account has been updated successfully. You will be redirected to your dashboard shortly.
+              Your subscription has been successfully upgraded. You now have access to all the features included in your new plan.
             </p>
           </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
+          <CardFooter className="flex justify-center space-x-4">
+            <Button onClick={() => navigate('/account')}>
+              View Account
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/analysis')}>
+              Start Analyzing
             </Button>
           </CardFooter>
         </Card>
