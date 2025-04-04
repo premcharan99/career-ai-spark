@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,13 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      throw new Error("API key not found");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      throw new Error("OpenAI API key not found");
     }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const { fileContent, fileName } = await req.json();
 
@@ -55,68 +51,79 @@ serve(async (req) => {
       ${fileContent}
     `;
 
-    try {
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      // Extract JSON from the response
-      let parsedData;
-      try {
-        // Try to find JSON in the response
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || 
-                         text.match(/```\n([\s\S]*?)\n```/) ||
-                         text.match(/{[\s\S]*?}/);
-                         
-        const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : text;
-        parsedData = JSON.parse(jsonStr.replace(/```/g, '').trim());
-        
-        // Ensure the response has the correct structure
-        const expectedKeys = ['skills', 'experience', 'education', 'certifications'];
-        for (const key of expectedKeys) {
-          if (!parsedData[key] || !Array.isArray(parsedData[key])) {
-            parsedData[key] = [];
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing Gemini response:", error);
-        console.log("Raw response:", text);
-        
-        // Create a fallback response with placeholders
-        parsedData = {
-          skills: ["Communication", "Problem Solving", "Time Management"],
-          experience: ["Could not extract experience from resume"],
-          education: ["Could not extract education from resume"],
-          certifications: []
-        };
-      }
-      
-      return new Response(JSON.stringify(parsedData), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      console.error("Error generating Gemini response:", error);
-      
-      // Return a fallback response with a more detailed error
-      return new Response(
-        JSON.stringify({ 
-          error: "Failed to parse resume with Gemini API. Please try again or use a different resume format.",
-          skills: ["Communication", "Problem Solving", "Time Management"],
-          experience: ["Could not extract experience from resume"],
-          education: ["Could not extract education from resume"],
-          certifications: []
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Call the OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { "role": "system", "content": "You are a resume analysis expert that helps parse resumes. Extract only the requested information." },
+          { "role": "user", "content": prompt }
+        ],
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("OpenAI API error:", errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || "Unknown error"}`);
     }
+
+    const openaiData = await response.json();
+    
+    if (!openaiData.choices || openaiData.choices.length === 0) {
+      console.error("Unexpected OpenAI response:", openaiData);
+      throw new Error("Failed to get a proper response from OpenAI");
+    }
+
+    let parsedData;
+    try {
+      const resultText = openaiData.choices[0].message.content;
+      
+      // Try to extract JSON from the response
+      const jsonMatch = resultText.match(/```json\n([\s\S]*?)\n```/) || 
+                       resultText.match(/```\n([\s\S]*?)\n```/) ||
+                       resultText.match(/{[\s\S]*?}/);
+                       
+      const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : resultText;
+      parsedData = JSON.parse(jsonStr.replace(/```/g, '').trim());
+      
+      // Ensure the response has the correct structure
+      const expectedKeys = ['skills', 'experience', 'education', 'certifications'];
+      for (const key of expectedKeys) {
+        if (!parsedData[key] || !Array.isArray(parsedData[key])) {
+          parsedData[key] = [];
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing OpenAI response:", error);
+      console.log("Raw response:", openaiData.choices[0].message.content);
+      
+      // Create a fallback response with empty arrays
+      parsedData = {
+        skills: [],
+        experience: [],
+        education: [],
+        certifications: []
+      };
+    }
+      
+    return new Response(JSON.stringify(parsedData), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error in parse-resume function:", error);
     return new Response(
       JSON.stringify({ 
         error: error.message || "Failed to parse resume",
-        skills: ["Communication", "Problem Solving", "Time Management"],
-        experience: ["Could not extract experience from resume"],
-        education: ["Could not extract education from resume"],
+        skills: [],
+        experience: [],
+        education: [],
         certifications: []
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }

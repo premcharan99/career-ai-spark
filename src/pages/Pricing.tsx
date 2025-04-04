@@ -1,80 +1,20 @@
 
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, HelpCircle } from 'lucide-react';
-import { processPayment, subscriptionTiers } from '@/services/SubscriptionService';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { subscriptionTiers } from '@/services/SubscriptionService';
 
 const Pricing = () => {
-  const { user, profile, updateProfile } = useAuth();
   const navigate = useNavigate();
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
-  const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
+  const [showPricingDialog, setShowPricingDialog] = useState(false);
 
-  const handleUpgrade = async (tierId: 'free' | 'lite' | 'pro') => {
-    if (!user) {
-      toast({
-        title: "Login required",
-        description: "Please sign in to upgrade your subscription",
-        variant: "destructive",
-      });
-      navigate('/signin');
-      return;
-    }
-
-    // If user already has this plan
-    if (profile?.subscription_tier === tierId) {
-      toast({
-        title: "Already subscribed",
-        description: `You are already on the ${tierId.toUpperCase()} plan`,
-      });
-      navigate('/account');
-      return;
-    }
-
-    setIsUpgrading(tierId);
-    
-    try {
-      const success = await processPayment(user.id, tierId);
-      
-      if (success) {
-        await updateProfile();
-        toast({
-          title: "Subscription upgraded",
-          description: `Your subscription has been upgraded to ${tierId.toUpperCase()}`,
-        });
-        navigate('/dashboard');
-      } else {
-        throw new Error("Payment processing failed");
-      }
-    } catch (error) {
-      console.error('Error upgrading:', error);
-      toast({
-        title: "Upgrade failed",
-        description: "There was an error upgrading your subscription. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpgrading(null);
-    }
-  };
-
-  // Calculate yearly prices (20% discount)
-  const getPrice = (monthlyPrice: number) => {
-    if (billingPeriod === 'yearly') {
-      const yearlyPrice = monthlyPrice * 12 * 0.8; // 20% discount
-      return yearlyPrice.toFixed(2);
-    }
-    return monthlyPrice.toFixed(2);
-  };
-
-  const isCurrentPlan = (tierId: string) => {
-    return profile?.subscription_tier === tierId;
+  const handleUpgrade = () => {
+    setShowPricingDialog(true);
   };
 
   return (
@@ -87,22 +27,6 @@ const Pricing = () => {
           <p className="mt-4 text-xl text-gray-500 max-w-3xl mx-auto">
             Choose the plan that's right for you and take your resume to the next level with AI-powered analysis
           </p>
-          
-          <div className="mt-8 flex justify-center">
-            <Tabs
-              defaultValue="monthly"
-              value={billingPeriod}
-              onValueChange={(value) => setBillingPeriod(value as 'monthly' | 'yearly')}
-              className="w-72"
-            >
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                <TabsTrigger value="yearly">
-                  Yearly <span className="ml-1 text-xs text-green-600 font-semibold">Save 20%</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
         </div>
         
         <div className="grid gap-8 lg:grid-cols-3">
@@ -130,10 +54,8 @@ const Pricing = () => {
                     <span className="text-4xl font-extrabold">Free</span>
                   ) : (
                     <>
-                      <span className="text-4xl font-extrabold">${getPrice(tier.price)}</span>
-                      <span className="text-gray-500 ml-2">
-                        {billingPeriod === 'monthly' ? '/month' : '/year'}
-                      </span>
+                      <span className="text-4xl font-extrabold">${tier.price.toFixed(2)}</span>
+                      <span className="text-gray-500 ml-2">/month</span>
                     </>
                   )}
                 </div>
@@ -151,12 +73,9 @@ const Pricing = () => {
                 <Button 
                   className="w-full" 
                   variant={tier.id === 'free' ? 'outline' : 'default'}
-                  onClick={() => handleUpgrade(tier.id as 'free' | 'lite' | 'pro')}
-                  disabled={isCurrentPlan(tier.id) || !!isUpgrading}
+                  onClick={handleUpgrade}
                 >
-                  {isUpgrading === tier.id ? 'Processing...' : 
-                   isCurrentPlan(tier.id) ? 'Current Plan' : 
-                   tier.id === 'free' ? 'Get Started' : 'Upgrade'}
+                  {tier.id === 'free' ? 'Get Started' : 'Upgrade'}
                 </Button>
               </CardFooter>
             </Card>
@@ -190,6 +109,26 @@ const Pricing = () => {
           </div>
         </div>
       </div>
+      
+      {/* Coming Soon Dialog */}
+      <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pricing Features Coming Soon</DialogTitle>
+            <DialogDescription>
+              Our subscription services are currently under development. In the meantime, you can use the free tier with a limit of 15 analyses per day. Thank you for your patience!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => {
+              setShowPricingDialog(false);
+              navigate('/analysis');
+            }}>
+              Go to Analysis
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 };

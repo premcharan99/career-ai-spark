@@ -9,7 +9,7 @@ import { FileText, Link2, Upload } from 'lucide-react';
 import ResumeUploader from './ResumeUploader';
 
 interface AnalysisFormProps {
-  onResumeSelected: (file: File) => void;
+  onResumeSelected: (file: File | null, text?: string) => void;
   onJobDescriptionSubmit: (description: string) => void;
   isLoading: boolean;
   disabled?: boolean;
@@ -18,12 +18,27 @@ interface AnalysisFormProps {
 const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, disabled = false }: AnalysisFormProps) => {
   const [jobDescription, setJobDescription] = useState('');
   const [jobUrl, setJobUrl] = useState('');
+  const [resumeSubmitted, setResumeSubmitted] = useState(false);
+
+  const handleResumeSelected = (file: File | null, text?: string) => {
+    onResumeSelected(file, text);
+    setResumeSubmitted(true);
+  };
 
   const handleJobDescriptionSubmit = () => {
     if (jobDescription.trim().length < 50) {
       toast({
         title: "Job description too short",
         description: "Please enter a more detailed job description for better analysis",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!resumeSubmitted) {
+      toast({
+        title: "Resume required",
+        description: "Please upload or enter your resume first",
         variant: "destructive",
       });
       return;
@@ -42,9 +57,6 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, dis
       return;
     }
 
-    // In a real implementation, this would:
-    // 1. Call a backend function to scrape the job description from the URL
-    // 2. Process the scraped content
     toast({
       title: "Fetching job description",
       description: "We're retrieving the job description from the provided URL",
@@ -52,33 +64,12 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, dis
 
     try {
       // Simulate API call to scrape job description
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock scraped job description
-      const scrapedDescription = `
-        Senior Frontend Developer
-
-        RESPONSIBILITIES:
-        - Develop and maintain web applications using React, TypeScript, and other modern technologies
-        - Collaborate with UX/UI designers to implement responsive and visually appealing interfaces
-        - Write clean, maintainable, and well-documented code
-        - Optimize applications for maximum speed and scalability
-        - Stay up-to-date with emerging technologies and industry trends
-
-        REQUIREMENTS:
-        - 3+ years of experience with React and modern JavaScript frameworks
-        - Strong proficiency in HTML5, CSS3, and JavaScript (ES6+)
-        - Experience with state management libraries (Redux, Context API, etc.)
-        - Understanding of server-side rendering and its benefits
-        - Familiarity with RESTful APIs and GraphQL
-        - Knowledge of browser rendering behavior and performance optimization
-        - Bachelor's degree in Computer Science or related field, or equivalent experience
-      `;
-      
-      setJobDescription(scrapedDescription);
       toast({
-        title: "Job description retrieved",
-        description: "We've successfully retrieved the job description from the URL",
+        title: "URL feature coming soon",
+        description: "Please manually copy and paste the job description from the URL for now.",
+        variant: "destructive",
       });
     } catch (error) {
       console.error('Error fetching job description:', error);
@@ -120,14 +111,8 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, dis
       <div className="p-8 text-center bg-white rounded-lg shadow">
         <h3 className="text-lg font-medium text-red-600 mb-2">Analysis Limit Reached</h3>
         <p className="mb-4 text-gray-600">
-          You've reached your limit of free resume analyses. Please upgrade your plan to continue.
+          You've reached your limit of free resume analyses today. Please try again tomorrow.
         </p>
-        <Button 
-          onClick={() => window.location.href = '/pricing'}
-          className="bg-primary"
-        >
-          Upgrade Now
-        </Button>
       </div>
     );
   }
@@ -136,7 +121,7 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, dis
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-semibold mb-4">Step 1: Upload Your Resume</h2>
-        <ResumeUploader onFileSelected={onResumeSelected} />
+        <ResumeUploader onFileSelected={handleResumeSelected} />
       </div>
       
       <div>
@@ -178,7 +163,7 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, dis
                   
                   <Button 
                     onClick={handleJobDescriptionSubmit} 
-                    disabled={jobDescription.trim().length < 50 || isLoading}
+                    disabled={jobDescription.trim().length < 50 || isLoading || !resumeSubmitted}
                   >
                     {isLoading ? 'Analyzing...' : 'Analyze Match'}
                   </Button>
@@ -190,7 +175,7 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, dis
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-4">
-                    Enter the URL of the job posting and we'll extract the job description automatically
+                    Enter the URL of the job posting (Coming Soon)
                   </p>
                   <div className="flex gap-2">
                     <div className="flex-1">
@@ -215,19 +200,18 @@ const AnalysisForm = ({ onResumeSelected, onJobDescriptionSubmit, isLoading, dis
                 {jobDescription && (
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Job Description (Extracted)</h3>
+                      <h3 className="text-sm font-medium mb-2">Job Description</h3>
                       <Textarea
                         value={jobDescription}
                         onChange={(e) => setJobDescription(e.target.value)}
                         className="min-h-[200px] resize-none"
-                        readOnly
                       />
                     </div>
                     
                     <div className="flex justify-end">
                       <Button 
                         onClick={handleJobDescriptionSubmit} 
-                        disabled={jobDescription.trim().length < 50 || isLoading}
+                        disabled={jobDescription.trim().length < 50 || isLoading || !resumeSubmitted}
                       >
                         {isLoading ? 'Analyzing...' : 'Analyze Match'}
                       </Button>

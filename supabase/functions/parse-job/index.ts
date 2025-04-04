@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,13 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      throw new Error("API key not found");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      throw new Error("OpenAI API key not found");
     }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const { jobDescription } = await req.json();
 
@@ -48,19 +44,46 @@ serve(async (req) => {
       ${jobDescription}
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    // Call the OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { "role": "system", "content": "You are a job description analysis expert. Extract only the requested information." },
+          { "role": "user", "content": prompt }
+        ],
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("OpenAI API error:", errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || "Unknown error"}`);
+    }
+
+    const openaiData = await response.json();
     
-    // Extract JSON from the response
+    if (!openaiData.choices || openaiData.choices.length === 0) {
+      console.error("Unexpected OpenAI response:", openaiData);
+      throw new Error("Failed to get a proper response from OpenAI");
+    }
+
     let parsedData;
     try {
-      // Try to find JSON in the response
-      const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || 
-                       text.match(/```\n([\s\S]*?)\n```/) ||
-                       text.match(/{[\s\S]*?}/);
+      const resultText = openaiData.choices[0].message.content;
+      
+      // Try to extract JSON from the response
+      const jsonMatch = resultText.match(/```json\n([\s\S]*?)\n```/) || 
+                       resultText.match(/```\n([\s\S]*?)\n```/) ||
+                       resultText.match(/{[\s\S]*?}/);
                        
-      const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : text;
+      const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : resultText;
       parsedData = JSON.parse(jsonStr.replace(/```/g, '').trim());
       
       // Ensure the response has the correct structure
@@ -71,8 +94,8 @@ serve(async (req) => {
         }
       }
     } catch (error) {
-      console.error("Error parsing Gemini response:", error);
-      console.log("Raw response:", text);
+      console.error("Error parsing OpenAI response:", error);
+      console.log("Raw response:", openaiData.choices[0].message.content);
       
       // Fallback with empty arrays
       parsedData = {
@@ -89,7 +112,13 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in parse-job function:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to parse job description" }),
+      JSON.stringify({ 
+        error: error.message || "Failed to parse job description",
+        requiredSkills: [],
+        preferredSkills: [],
+        responsibilities: [],
+        requirements: []
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

@@ -1,11 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 export const useApiKeys = () => {
   const [apiKeys, setApiKeys] = useState({
-    gemini: '',
     openai: ''
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -14,13 +12,10 @@ export const useApiKeys = () => {
     const fetchApiKeys = async () => {
       setIsLoading(true);
       try {
-        // Check if we have local copies (not secure, just for demo)
-        const geminiKey = 'AIzaSyCG9gBUjZcBqS4sFiGn2-Mt3rYIu6gjgA0';
-        const openaiKey = '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';
-        
+        // We don't actually store API keys in the frontend
+        // The API keys are stored in Supabase Edge Function secrets
         setApiKeys({
-          gemini: geminiKey || '',
-          openai: openaiKey || ''
+          openai: 'API Key stored securely on server'
         });
       } catch (error) {
         console.error('Error fetching API keys:', error);
@@ -37,21 +32,18 @@ export const useApiKeys = () => {
     fetchApiKeys();
   }, []);
 
-  const setGeminiApiKey = (key: string) => {
-    localStorage.setItem('gemini_api_key', key);
-    setApiKeys(prev => ({ ...prev, gemini: key }));
-  };
-
   const setOpenAIApiKey = (key: string) => {
-    localStorage.setItem('openai_api_key', key);
-    setApiKeys(prev => ({ ...prev, openai: key }));
+    toast({
+      title: "API Key Management",
+      description: "API keys are managed on the server for security reasons.",
+      variant: "default",
+    });
   };
 
   return {
     apiKeys,
     isLoading,
-    setGeminiApiKey,
     setOpenAIApiKey,
-    hasAllKeys: !!apiKeys.gemini && !!apiKeys.openai
+    hasAllKeys: true // We're assuming keys are managed on the server side
   };
 };

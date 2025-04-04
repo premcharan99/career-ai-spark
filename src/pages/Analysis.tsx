@@ -21,6 +21,7 @@ const Analysis = () => {
   const { user, profile, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [resume, setResume] = useState<File | null>(null);
+  const [resumeText, setResumeText] = useState<string>('');
   const [jobDescription, setJobDescription] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<MatchResult | null>(null);
@@ -36,49 +37,52 @@ const Analysis = () => {
       
       if (!canPerformAnalysis) {
         toast({
-          title: "Analysis limit reached",
-          description: `You've used all ${profile.max_analyses} analyses in your ${profile.subscription_tier} plan. Please upgrade to continue.`,
+          title: "Daily analysis limit reached",
+          description: `You've used all ${profile.max_analyses} analyses for today. The count will reset tomorrow.`,
           variant: "destructive",
         });
       }
     }
   }, [profile]);
 
-  const handleResumeSelect = (file: File) => {
+  const handleResumeSelect = (file: File | null, text?: string) => {
     setResume(file);
-    toast({
-      title: "Resume uploaded",
-      description: "Your resume has been uploaded successfully",
-    });
+    setResumeText(text || '');
+    
+    if (file) {
+      toast({
+        title: "Resume uploaded",
+        description: "Your resume has been uploaded successfully",
+      });
+    } else if (text) {
+      toast({
+        title: "Resume text received",
+        description: "Your resume text has been received successfully",
+      });
+    }
   };
 
   const extractJobTitle = (description: string): string => {
     // A simple function to extract a job title from a job description
-    // In a real implementation, this would be more sophisticated using AI
     const firstLine = description.split('\n')[0].trim();
     if (firstLine.length < 50) return firstLine;
     
-    const commonTitles = [
-      'Software Engineer', 'Frontend Developer', 'Backend Developer',
-      'Full Stack Developer', 'Product Manager', 'Data Scientist',
-      'UX Designer', 'Project Manager', 'Marketing Manager',
-      'Sales Representative', 'Customer Success Manager'
-    ];
+    // Look for common job title patterns
+    const titleRegex = /(?:job title|position|role):\s*([^\n.]+)/i;
+    const match = description.match(titleRegex);
     
-    for (const title of commonTitles) {
-      if (description.toLowerCase().includes(title.toLowerCase())) {
-        return title;
-      }
+    if (match && match[1]) {
+      return match[1].trim();
     }
     
     return 'Untitled Position';
   };
 
   const handleJobDescriptionSubmit = async (description: string) => {
-    if (!resume) {
+    if (!resume && !resumeText) {
       toast({
         title: "Resume required",
-        description: "Please upload your resume first",
+        description: "Please upload your resume or paste resume text first",
         variant: "destructive",
       });
       return;
@@ -96,11 +100,10 @@ const Analysis = () => {
 
     if (!analysisAllowed) {
       toast({
-        title: "Analysis limit reached",
-        description: `You've used all ${profile?.max_analyses} analyses in your plan. Please upgrade to continue.`,
+        title: "Daily analysis limit reached",
+        description: `You've used all ${profile?.max_analyses} analyses for today. The count will reset tomorrow.`,
         variant: "destructive",
       });
-      navigate('/pricing');
       return;
     }
 
@@ -116,7 +119,14 @@ const Analysis = () => {
       });
       
       // Step 1: Parse resume
-      const resumeData = await parseResume(resume);
+      let resumeData: ResumeData;
+      if (resume) {
+        resumeData = await parseResume(resume);
+      } else if (resumeText) {
+        resumeData = await parseResume(null, resumeText);
+      } else {
+        throw new Error("No resume provided");
+      }
       setParsedResumeData(resumeData);
       
       // Step 2: Parse job description
@@ -134,6 +144,7 @@ const Analysis = () => {
           extractedTitle, 
           analysisResult, 
           resume, 
+          resumeText,
           resumeData, 
           jobData, 
           description
@@ -161,6 +172,7 @@ const Analysis = () => {
 
   const handleNewAnalysis = () => {
     setResume(null);
+    setResumeText('');
     setJobDescription('');
     setResult(null);
     setJobTitle('');
@@ -191,8 +203,7 @@ const Analysis = () => {
         {profile && (
           <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
             <p className="text-sm text-gray-600">
-              You have used <span className="font-semibold">{profile.analyses_used}</span> of your <span className="font-semibold">{profile.max_analyses}</span> analyses 
-              in your <span className="capitalize font-semibold">{profile.subscription_tier}</span> plan.
+              You have used <span className="font-semibold">{profile.analyses_used}</span> of your <span className="font-semibold">{profile.max_analyses}</span> analyses for today.
             </p>
           </div>
         )}

@@ -17,16 +17,27 @@ export interface JobData {
   requirements: string[];
 }
 
-export const parseResume = async (resumeFile: File): Promise<ResumeData> => {
-  console.log('Parsing resume:', resumeFile.name);
+export const parseResume = async (resumeFile: File | null, resumeText?: string): Promise<ResumeData> => {
+  console.log('Parsing resume');
   
   try {
-    // Read the file content
-    const fileContent = await readFileAsText(resumeFile);
+    let fileContent = '';
+    
+    if (resumeFile) {
+      // Read the file content
+      fileContent = await readFileAsText(resumeFile);
+      console.log('Parsing resume from file:', resumeFile.name);
+    } else if (resumeText) {
+      // Use the provided text directly
+      fileContent = resumeText;
+      console.log('Parsing resume from text input');
+    } else {
+      throw new Error('No resume file or text provided');
+    }
     
     // Call the parse-resume edge function
     const { data, error } = await supabase.functions.invoke('parse-resume', {
-      body: { fileContent, fileName: resumeFile.name }
+      body: { fileContent, fileName: resumeFile?.name || 'text-input.txt' }
     });
     
     if (error) {
@@ -46,7 +57,7 @@ export const parseResume = async (resumeFile: File): Promise<ResumeData> => {
     console.error('Error calling parse-resume function:', error);
     toast({
       title: "Resume parsing failed",
-      description: error.message || "There was an error parsing your resume. Please try a different file.",
+      description: error.message || "There was an error parsing your resume. Please try a different file or text.",
       variant: "destructive",
     });
     throw error;
@@ -113,7 +124,9 @@ export const analyzeMatch = async (resumeData: ResumeData, jobData: JobData): Pr
   }
 };
 
-export const uploadResume = async (userId: string, resumeFile: File): Promise<string> => {
+export const uploadResume = async (userId: string, resumeFile: File | null): Promise<string> => {
+  if (!resumeFile) return '';
+  
   try {
     const timestamp = Date.now();
     const filePath = `${userId}/${timestamp}_${resumeFile.name.replace(/\s+/g, '_')}`;
@@ -166,17 +179,20 @@ export const saveAnalysis = async (
   userId: string, 
   jobTitle: string, 
   matchResult: MatchResult, 
-  resumeFile: File, 
+  resumeFile: File | null,
+  resumeText: string,
   resumeData: ResumeData,
   jobData: JobData,
   jobDescription: string
 ): Promise<string> => {
   console.log('Saving analysis to history for user:', userId);
   
-  // Upload resume file to Storage
+  // Upload resume file to Storage if provided
   let resumeUrl = '';
   try {
-    resumeUrl = await uploadResume(userId, resumeFile);
+    if (resumeFile) {
+      resumeUrl = await uploadResume(userId, resumeFile);
+    }
   } catch (error) {
     console.error('Resume upload failed but continuing with analysis save:', error);
   }
@@ -191,7 +207,8 @@ export const saveAnalysis = async (
         resumeData,
         jobData,
         jobDescription,
-        resumeUrl
+        resumeUrl,
+        resumeText: resumeText || null
       }
     });
     

@@ -17,7 +17,7 @@ export const subscriptionTiers = [
     price: 0,
     features: [
       'Basic resume analysis',
-      '5 analyses per month',
+      '15 analyses per day',
       'Skills matching',
       'Basic improvement suggestions'
     ]
@@ -28,7 +28,7 @@ export const subscriptionTiers = [
     price: 9.99,
     features: [
       'Everything in Free',
-      '20 analyses per month',
+      'Unlimited analyses',
       'Advanced keyword optimization',
       'ATS compatibility score',
       'Priority support'
@@ -40,7 +40,7 @@ export const subscriptionTiers = [
     price: 19.99,
     features: [
       'Everything in Lite',
-      '100 analyses per month',
+      'Unlimited analyses',
       'Industry-specific recommendations',
       'Advanced formatting suggestions',
       'Resume templates',
@@ -82,30 +82,19 @@ export const getRemainingAnalyses = async (userId: string): Promise<Subscription
     // Return default values for error case
     return {
       used: 0,
-      limit: 5,
-      remaining: 5,
+      limit: 15,
+      remaining: 15,
       tier: 'free',
       status: 'active'
     };
   }
 };
 
-// Process payment and upgrade subscription
+// Simulate payment and upgrade subscription
 export const processPayment = async (userId: string, plan: 'free' | 'lite' | 'pro'): Promise<boolean> => {
   try {
-    console.log(`Processing payment for plan: ${plan}`);
-    
-    const { data, error } = await supabase.functions.invoke('process-payment', {
-      body: { userId, plan }
-    });
-    
-    if (error) {
-      console.error('Error processing payment:', error);
-      throw new Error(`Error processing payment: ${error.message}`);
-    }
-    
-    console.log('Payment response:', data);
-    return data.success;
+    console.log(`Payment processing is currently disabled. Plan: ${plan}`);
+    return false; // Always return false as payment processing is disabled
   } catch (error) {
     console.error('Error in processPayment:', error);
     return false;
@@ -115,4 +104,24 @@ export const processPayment = async (userId: string, plan: 'free' | 'lite' | 'pr
 // Upgrade a user's subscription (for backward compatibility)
 export const upgradeSubscription = async (userId: string, newTier: 'free' | 'lite' | 'pro'): Promise<boolean> => {
   return processPayment(userId, newTier);
+};
+
+// Reset daily analysis count
+export const resetDailyAnalysisCount = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ analyses_used: 0 })
+      .eq('id', userId);
+    
+    if (error) {
+      console.error('Error resetting daily analysis count:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in resetDailyAnalysisCount:', error);
+    return false;
+  }
 };

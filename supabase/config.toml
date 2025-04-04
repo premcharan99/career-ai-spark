@@ -46,3 +46,4 @@ verify_jwt = true
 
 [functions.get-analysis-detail]
 verify_jwt = true
+

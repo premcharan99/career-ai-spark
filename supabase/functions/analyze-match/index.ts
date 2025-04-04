@@ -102,14 +102,20 @@ serve(async (req) => {
         "Authorization": `Bearer ${openaiApiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o-mini",
         messages: [
           { "role": "system", "content": "You are a resume analysis expert that helps match resumes to job descriptions. You provide detailed, actionable feedback." },
           { "role": "user", "content": prompt }
         ],
-        temperature: 0.7
+        temperature: 0.5
       })
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("OpenAI API error:", errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || "Unknown error"}`);
+    }
 
     const openaiData = await response.json();
     
@@ -185,7 +191,6 @@ serve(async (req) => {
     }
 
     // Increment the user's analyses count through a database function
-    // We'll do this here to ensure it's counted even if the user doesn't save the analysis
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL");
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
